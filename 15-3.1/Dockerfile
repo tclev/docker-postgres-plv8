@@ -8,17 +8,20 @@ RUN set -ex \
   && git clone https://github.com/plv8/plv8 \
   && cd plv8 \
   && git checkout v${PLV8_VERSION} \
+  && make DOCKER=1 generate_upgrades \
   && make DOCKER=1 install \
   && strip /usr/lib/postgresql/${PG_MAJOR}/lib/plv8-${PLV8_VERSION}.so
 
 
 FROM postgres:15-bullseye
 
+ENV PLV8_VERSION=3.1.5
 COPY --from=builder /usr/lib/postgresql/${PG_MAJOR}/lib/plv8* /usr/lib/postgresql/${PG_MAJOR}/lib/
+COPY --from=builder /usr/lib/postgresql/${PG_MAJOR}/lib/bitcode/plv8-${PLV8_VERSION}.index.bc /usr/lib/postgresql/${PG_MAJOR}/lib/bitcode/
+COPY --from=builder /usr/lib/postgresql/${PG_MAJOR}/lib/bitcode/plv8-${PLV8_VERSION}/* /usr/lib/postgresql/${PG_MAJOR}/lib/bitcode/plv8-${PLV8_VERSION}/
 COPY --from=builder /usr/share/postgresql/${PG_MAJOR}/extension/plv8* /usr/share/postgresql/${PG_MAJOR}/extension/
 COPY --from=builder /usr/share/postgresql/${PG_MAJOR}/extension/plls* /usr/share/postgresql/${PG_MAJOR}/extension/
 COPY --from=builder /usr/share/postgresql/${PG_MAJOR}/extension/plcoffee* /usr/share/postgresql/${PG_MAJOR}/extension/
-COPY --from=builder /usr/lib/postgresql/${PG_MAJOR}/lib/bitcode/plv8* /usr/lib/postgresql/${PG_MAJOR}/bitcode/
 
 
 RUN mkdir -p /var/log/postgres \
